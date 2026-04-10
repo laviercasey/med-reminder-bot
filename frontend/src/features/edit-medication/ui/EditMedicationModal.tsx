@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Sunrise,
@@ -56,18 +56,6 @@ export function EditMedicationModal({
     [medication.schedule]: medication.time,
   });
   const [editingTimeFor, setEditingTimeFor] = useState<MedicationSchedule | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      setName(medication.name);
-      setSchedule(medication.schedule);
-      setTimes({
-        ...DEFAULT_TIMES,
-        [medication.schedule]: medication.time,
-      });
-      setEditingTimeFor(null);
-    }
-  }, [isOpen, medication.name, medication.schedule, medication.time]);
 
   const handleScheduleChange = useCallback((newSchedule: MedicationSchedule) => {
     setSchedule(newSchedule);
@@ -213,6 +201,7 @@ export function EditMedicationModal({
 
       {editingTimeFor && (
         <EditTimeModal
+          key={editingTimeFor}
           isOpen={!!editingTimeFor}
           onClose={() => setEditingTimeFor(null)}
           scheduleLabel={t(`medications.${editingTimeFor}`)}

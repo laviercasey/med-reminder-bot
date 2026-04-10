@@ -77,12 +77,14 @@ export function MedicationsPage() {
       </div>
 
       <AddMedicationForm
+        key={addOpen ? "open" : "closed"}
         isOpen={addOpen}
         onClose={() => setAddOpen(false)}
       />
 
       {editTarget && (
         <EditMedicationModal
+          key={editTarget.id}
           medication={editTarget}
           isOpen={!!editTarget}
           onClose={handleEditClose}

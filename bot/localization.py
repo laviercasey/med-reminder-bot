@@ -2,10 +2,16 @@ from typing import Any
 
 TEXTS = {
     "ru": {
-        "welcome": "Добро пожаловать в МедНапоминалку! Я буду помогать вам не забывать принимать лекарства вовремя.",
+        "welcome": (
+            "Добро пожаловать в МедНапоминалку!"
+            " Я буду помогать вам не забывать принимать лекарства вовремя."
+        ),
         "language_selected": "Вы выбрали русский язык.",
         "select_language": "Выберите язык / Select language:",
-        "user_blocked": "Вы были заблокированы администратором. Обратитесь в поддержку для выяснения причин.",
+        "user_blocked": (
+            "Вы были заблокированы администратором."
+            " Обратитесь в поддержку для выяснения причин."
+        ),
         "reminder": "Напоминание: Пора принять {name}!",
         "reminder_repeat": "Напоминаю: Вы ещё не отметили приём лекарства {name}!",
         "take_now": "Принять сейчас",
@@ -23,10 +29,16 @@ TEXTS = {
         "error": "Произошла ошибка",
     },
     "en": {
-        "welcome": "Welcome to MedReminder! I will help you remember to take your medications on time.",
+        "welcome": (
+            "Welcome to MedReminder!"
+            " I will help you remember to take your medications on time."
+        ),
         "language_selected": "You have selected English language.",
         "select_language": "Select language / Выберите язык:",
-        "user_blocked": "You have been blocked by the administrator. Please contact support for more information.",
+        "user_blocked": (
+            "You have been blocked by the administrator."
+            " Please contact support for more information."
+        ),
         "reminder": "Reminder: Time to take {name}!",
         "reminder_repeat": "Reminder: You haven't marked {name} as taken yet!",
         "take_now": "Take now",

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Sunrise, Sun, Moon, Clock, Loader2, X, Pencil, Plus, type LucideIcon } from "lucide-react";
 import type { MedicationSchedule } from "@/entities/medication";
@@ -35,15 +35,6 @@ export function AddMedicationForm({ isOpen, onClose }: AddMedicationFormProps) {
   const [schedule, setSchedule] = useState<MedicationSchedule>("morning");
   const [times, setTimes] = useState<Record<MedicationSchedule, string>>({ ...DEFAULT_TIMES });
   const [editingTimeFor, setEditingTimeFor] = useState<MedicationSchedule | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      setName("");
-      setSchedule("morning");
-      setTimes({ ...DEFAULT_TIMES });
-      setEditingTimeFor(null);
-    }
-  }, [isOpen]);
 
   const handleScheduleChange = useCallback((newSchedule: MedicationSchedule) => {
     setSchedule(newSchedule);
@@ -182,6 +173,7 @@ export function AddMedicationForm({ isOpen, onClose }: AddMedicationFormProps) {
 
       {editingTimeFor && (
         <EditTimeModal
+          key={editingTimeFor}
           isOpen={!!editingTimeFor}
           onClose={() => setEditingTimeFor(null)}
           scheduleLabel={t(`medications.${editingTimeFor}`)}

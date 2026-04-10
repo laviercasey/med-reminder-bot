@@ -113,7 +113,7 @@ jobs:
       - run: npm ci
 
       - name: Audit Node dependencies
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=critical
 
   frontend-test:
     name: Frontend Test

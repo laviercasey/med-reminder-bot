@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Check } from "lucide-react";
 import { BottomSheet } from "@/shared/ui";
@@ -45,15 +45,6 @@ export function EditTimeModal({
   const [activeField, setActiveField] = useState<ActiveField>("hours");
   const hoursRef = useRef<HTMLInputElement>(null);
   const minutesRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      const [h, m] = currentTime.split(":");
-      setHours(h ?? "08");
-      setMinutes(m ?? "00");
-      setActiveField("hours");
-    }
-  }, [isOpen, currentTime]);
 
   const handleHoursKey = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" || e.key === "Delete" || e.key === "Tab") return;

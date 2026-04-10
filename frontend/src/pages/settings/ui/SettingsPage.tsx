@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,12 +21,6 @@ function CustomIntervalModal({ isOpen, currentValue, onClose, onSave }: {
 }) {
   const { t } = useTranslation();
   const [value, setValue] = useState(String(currentValue || 10));
-
-  useEffect(() => {
-    if (isOpen) {
-      setValue(String(currentValue || 10));
-    }
-  }, [isOpen, currentValue]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" || e.key === "Delete" || e.key === "Tab") return;
@@ -122,12 +116,12 @@ export function SettingsPage() {
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useUserSettings();
   const [customModalOpen, setCustomModalOpen] = useState(false);
-  const [lastCustom, setLastCustom] = useState<number | null>(null);
 
-  useEffect(() => {
+  const lastCustom = useMemo(() => {
     if (settings?.reminder_repeat_minutes && !REPEAT_OPTIONS.includes(settings.reminder_repeat_minutes)) {
-      setLastCustom(settings.reminder_repeat_minutes);
+      return settings.reminder_repeat_minutes;
     }
+    return null;
   }, [settings?.reminder_repeat_minutes]);
 
   const updateSettings = useMutation({
@@ -350,11 +344,11 @@ export function SettingsPage() {
       </div>
 
       <CustomIntervalModal
+        key={customModalOpen ? "open" : "closed"}
         isOpen={customModalOpen}
         currentValue={lastCustom ?? 10}
         onClose={() => setCustomModalOpen(false)}
         onSave={(minutes) => {
-          setLastCustom(minutes);
           handleRepeatChange(minutes);
         }}
       />
