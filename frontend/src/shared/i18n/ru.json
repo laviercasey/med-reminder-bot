@@ -1,0 +1,97 @@
+{
+  "checklist": {
+    "today_medications": "Лекарства на сегодня",
+    "no_medications_today": "На сегодня нет запланированных лекарств.",
+    "medication_taken": "Принято",
+    "medication_not_taken": "Не принято",
+    "all_taken_congrats": "Все лекарства приняты! Отличная работа!",
+    "keep_going": "Продолжай, почти готово!",
+    "progress_count": "{{taken}} из {{total}} принято",
+    "mark_taken": "Отметить как принятое",
+    "undo_taken": "Снять отметку",
+    "today_checklist": "Сегодня"
+  },
+  "medications": {
+    "add_medication": "Добавить лекарство",
+    "medication_name_placeholder": "Введите название лекарства...",
+    "medication_name_prompt": "Название лекарства",
+    "select_schedule": "Расписание",
+    "morning": "Утро",
+    "day": "День",
+    "evening": "Вечер",
+    "custom": "Своё время",
+    "select_time": "Выберите время приёма:",
+    "medication_added": "Лекарство {{name}} добавлено на {{time}}",
+    "my_medications": "Мои лекарства",
+    "no_medications": "Вы еще не добавили ни одного лекарства.",
+    "delete_medication": "Удалить лекарство",
+    "confirm_delete": "Вы уверены, что хотите удалить {{name}}?",
+    "medication_deleted": "Лекарство {{name}} удалено.",
+    "edit_medication": "Редактировать лекарство",
+    "save_changes": "Сохранить изменения",
+    "medication_updated": "Лекарство {{name}} обновлено",
+    "active_count": "{{count}} лекарства активны",
+    "delete_description": "Это лекарство и вся его история будут удалены безвозвратно."
+  },
+  "settings": {
+    "settings": "Настройки",
+    "language": "Язык",
+    "reminders_settings": "Напоминания",
+    "reminders_enabled": "Напоминания включены",
+    "reminders_disabled": "Напоминания отключены",
+    "select_repeat_interval": "Интервал повтора уведомлений",
+    "language_changed": "Язык изменён",
+    "minutes": "минут",
+    "custom_interval": "Свой интервал",
+    "custom_interval_hint": "Установите интервал повтора в минутах"
+  },
+  "common": {
+    "welcome": "Добро пожаловать в МедНапоминалку!",
+    "welcome_back": "С возвращением!",
+    "select_language": "Выберите язык:",
+    "cancel": "Отмена",
+    "back": "Назад",
+    "save": "Сохранить",
+    "confirm": "Подтвердить",
+    "error": "Произошла ошибка. Попробуйте позже."
+  },
+  "nav": {
+    "checklist": "Чек-лист",
+    "medications": "Таблетки",
+    "settings": "Настройки",
+    "admin": "Админ"
+  },
+  "admin": {
+    "title": "Админ-панель",
+    "overview": "Обзор и статистика",
+    "stats": "Статистика",
+    "total_users": "Пользователи",
+    "active_users": "Активных (7 дней)",
+    "taken_rate": "Процент приёма",
+    "avg_medications": "Среднее кол-во лекарств",
+    "medications_label": "Лекарства",
+    "weekly_registrations": "Регистрации за неделю",
+    "recent_activity": "Последняя активность",
+    "view_all_users": "Все пользователи",
+    "user_metrics": "Метрики пользователей",
+    "engagement": "Вовлечённость",
+    "top_medications": "Популярные лекарства"
+  },
+  "consent": {
+    "welcome_title": "Добро пожаловать в\nMedReminder",
+    "welcome_subtitle": "Ваш персональный помощник\nпо приёму лекарств",
+    "feature_secure": "Данные хранятся на защищённых серверах",
+    "feature_privacy": "Мы не передаём личную информацию",
+    "feature_delete": "Удалите данные в любой момент из настроек",
+    "accept": "Принять и продолжить",
+    "read_our": "Читать",
+    "privacy_link": "Политику конфиденциальности"
+  },
+  "time_edit": {
+    "title": "Редактировать время: {{schedule}}",
+    "select_time": "Выберите время для расписания {{schedule}}",
+    "tap_hint": "Нажмите на часы или минуты для изменения",
+    "save": "Сохранить время",
+    "reset": "Сбросить по умолчанию ({{time}})"
+  }
+}

@@ -1,0 +1,30 @@
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  api:
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./api:/app/api
+      - ./shared:/app/shared
+      - ./migrations:/app/migrations
+      - ./alembic.ini:/app/alembic.ini
+    command: uvicorn api.main:create_app --factory --host 0.0.0.0 --port 8000 --reload
+
+  bot:
+    volumes:
+      - ./bot:/app/bot
+      - ./shared:/app/shared
+
+  nginx:
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./docker/nginx/dev-conf.d:/etc/nginx/conf.d:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro

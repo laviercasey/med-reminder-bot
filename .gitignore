@@ -1,54 +1,68 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
+*.egg
 
+.venv/
 venv/
-.env/
-.env.*.local
+env/
+
 .env
+.env.local
+.env.*.local
 
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
 
-*.log
-*.sqlite3
-*.db
-*.egg-info/
+node_modules/
+
 dist/
 build/
+*.js.map
+
+*.log
+logs/
+
+*.sqlite3
+*.db
 
 migrations/__pycache__/
 migrations/versions/*.pyc
-
-logs/
-*.log
 
 .ipynb_checkpoints/
 
 .DS_Store
 Thumbs.db
-
 ehthumbs.db
-Icon?
 Desktop.ini
 
-*.csv
 *.bak
 *.dump
 
 htmlcov/
 .coverage
+.coverage.*
+coverage.xml
 .tox/
 .nox/
 .cache/
-
 .pytest_cache/
 
 .mypy_cache/
+.ruff_cache/
 
 *.prof
 *.lprof
 *.pstats
-
 bandit.json
+
+.claude/
+
+.pencil-pipeline/
+*.pen
+
+.orchestra/

@@ -1,0 +1,97 @@
+{
+  "checklist": {
+    "today_medications": "Today's medications",
+    "no_medications_today": "No medications scheduled for today.",
+    "medication_taken": "Taken",
+    "medication_not_taken": "Not taken",
+    "all_taken_congrats": "All medications taken! Great job!",
+    "keep_going": "Keep going, almost done!",
+    "progress_count": "{{taken}} of {{total}} taken",
+    "mark_taken": "Mark as taken",
+    "undo_taken": "Mark as not taken",
+    "today_checklist": "Today's Checklist"
+  },
+  "medications": {
+    "add_medication": "Add Medication",
+    "medication_name_placeholder": "Enter medication name...",
+    "medication_name_prompt": "Medication Name",
+    "select_schedule": "Schedule",
+    "morning": "Morning",
+    "day": "Day",
+    "evening": "Evening",
+    "custom": "Custom time",
+    "select_time": "Select intake time:",
+    "medication_added": "Medication {{name}} added at {{time}}",
+    "my_medications": "My medications",
+    "no_medications": "You haven't added any medications yet.",
+    "delete_medication": "Delete medication",
+    "confirm_delete": "Are you sure you want to delete {{name}}?",
+    "medication_deleted": "Medication {{name}} has been deleted.",
+    "edit_medication": "Edit medication",
+    "save_changes": "Save Changes",
+    "medication_updated": "Medication {{name}} updated",
+    "active_count": "{{count}} medications active",
+    "delete_description": "This medication and all its history will be permanently removed."
+  },
+  "settings": {
+    "settings": "Settings",
+    "language": "Language",
+    "reminders_settings": "Reminders",
+    "reminders_enabled": "Reminders enabled",
+    "reminders_disabled": "Reminders disabled",
+    "select_repeat_interval": "Notification Repeat Interval",
+    "language_changed": "Language changed",
+    "minutes": "minutes",
+    "custom_interval": "Custom Interval",
+    "custom_interval_hint": "Set repeat interval in minutes"
+  },
+  "common": {
+    "welcome": "Welcome to MedReminder!",
+    "welcome_back": "Welcome back!",
+    "select_language": "Select language:",
+    "cancel": "Cancel",
+    "back": "Back",
+    "save": "Save",
+    "confirm": "Confirm",
+    "error": "An error occurred. Please try again later."
+  },
+  "nav": {
+    "checklist": "Checklist",
+    "medications": "Pills",
+    "settings": "Settings",
+    "admin": "Admin"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "overview": "Overview & Statistics",
+    "stats": "Statistics",
+    "total_users": "Users",
+    "active_users": "Active (7 days)",
+    "taken_rate": "Taken Rate",
+    "avg_medications": "Avg medications",
+    "medications_label": "Medications",
+    "weekly_registrations": "Weekly Registrations",
+    "recent_activity": "Recent Activity",
+    "view_all_users": "View All Users",
+    "user_metrics": "User Metrics",
+    "engagement": "Engagement",
+    "top_medications": "Top Medications"
+  },
+  "consent": {
+    "welcome_title": "Welcome to\nMedReminder",
+    "welcome_subtitle": "Your personal medication\ntracking assistant",
+    "feature_secure": "Your data stays on our secure servers",
+    "feature_privacy": "We never share personal information",
+    "feature_delete": "Delete your data anytime from Settings",
+    "accept": "Accept & Continue",
+    "read_our": "Read our",
+    "privacy_link": "Privacy Policy"
+  },
+  "time_edit": {
+    "title": "Edit {{schedule}} Time",
+    "select_time": "Select time for {{schedule}} schedule",
+    "tap_hint": "Tap hours or minutes to adjust",
+    "save": "Save Time",
+    "reset": "Reset to default ({{time}})"
+  }
+}

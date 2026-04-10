@@ -1,0 +1,10 @@
+from aiogram import Router
+
+from bot.handlers import reminders, start
+
+
+def setup_routers() -> Router:
+    router = Router()
+    router.include_router(start.router)
+    router.include_router(reminders.router)
+    return router
