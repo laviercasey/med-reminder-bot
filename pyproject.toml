@@ -1,3 +1,14 @@
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["api", "shared"]
+omit = [
+    "api/main.py",
+    "api/middleware/*",
+    "api/dependencies.py",
+    "shared/logging.py",
+    "shared/redis.py",
+    "shared/database/db.py",
+]
