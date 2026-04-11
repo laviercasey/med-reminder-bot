@@ -56,7 +56,7 @@ describe("useMedications", () => {
 
   it("fetches medications from /medications endpoint", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(
-      createSuccessResponse(mockMedications)
+      createSuccessResponse({ medications: mockMedications, count: mockMedications.length })
     );
 
     const { result } = renderHook(() => useMedications(), {

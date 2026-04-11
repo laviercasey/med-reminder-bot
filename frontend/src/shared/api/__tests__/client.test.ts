@@ -3,8 +3,7 @@ import {
   createSuccessResponse,
   mockMedications,
 } from "@/test/mocks/handlers";
-
-const API_URL = "http://localhost:8000/api";
+import { API_URL } from "@/shared/config";
 
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());

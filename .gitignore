@@ -47,6 +47,7 @@ htmlcov/
 .coverage
 .coverage.*
 coverage.xml
+coverage/
 .tox/
 .nox/
 .cache/
@@ -61,8 +62,6 @@ coverage.xml
 bandit.json
 
 .claude/
-
+.orchestra/
 .pencil-pipeline/
 *.pen
-
-.orchestra/

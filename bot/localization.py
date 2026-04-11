@@ -9,8 +9,7 @@ TEXTS = {
         "language_selected": "Вы выбрали русский язык.",
         "select_language": "Выберите язык / Select language:",
         "user_blocked": (
-            "Вы были заблокированы администратором."
-            " Обратитесь в поддержку для выяснения причин."
+            "Вы были заблокированы администратором. Обратитесь в поддержку для выяснения причин."
         ),
         "reminder": "Напоминание: Пора принять {name}!",
         "reminder_repeat": "Напоминаю: Вы ещё не отметили приём лекарства {name}!",
@@ -30,8 +29,7 @@ TEXTS = {
     },
     "en": {
         "welcome": (
-            "Welcome to MedReminder!"
-            " I will help you remember to take your medications on time."
+            "Welcome to MedReminder! I will help you remember to take your medications on time."
         ),
         "language_selected": "You have selected English language.",
         "select_language": "Select language / Выберите язык:",

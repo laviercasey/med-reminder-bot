@@ -1,9 +1,17 @@
 import hashlib
 import hmac
 import json
+import os
 import time
 import urllib.parse
 from typing import AsyncGenerator
+
+os.environ.setdefault("BOT_TOKEN", "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz_0123456789")
+os.environ.setdefault("DB_USER", "test")
+os.environ.setdefault("DB_PASS", "test")
+os.environ.setdefault("DB_NAME", "test")
+os.environ.setdefault("ADMIN_IDS", "999999999")
+os.environ.setdefault("ENVIRONMENT", "development")
 
 import pytest
 import pytest_asyncio
