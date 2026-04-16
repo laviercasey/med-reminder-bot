@@ -100,7 +100,10 @@ jobs:
 
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
             docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm migrate
-            rsync -a --delete frontend-dist/ /opt/apps/caddy/med-frontend/
+            docker run --rm --user 0 \
+              -v med_frontend:/dest \
+              -v /opt/apps/med-reminder-bot/frontend-dist:/src:ro \
+              alpine sh -c "rm -rf /dest/* && cp -R /src/. /dest/"
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
 
             sleep 10
