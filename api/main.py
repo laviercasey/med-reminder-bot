@@ -69,8 +69,8 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=api_config.cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
     app.include_router(medication_router, prefix="/api")
