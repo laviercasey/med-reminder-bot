@@ -68,6 +68,22 @@ jobs:
             ${{ env.BOT_IMAGE }}:latest
             ${{ env.BOT_IMAGE }}:${{ steps.meta.outputs.sha_short }}
 
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload frontend to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "frontend/dist/*"
+          target: "/opt/apps/med-reminder-bot/frontend-dist"
+          strip_components: 2
+
       - name: Deploy to server
         uses: appleboy/ssh-action@v1
         with:
@@ -75,12 +91,16 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            cd ~/med-reminder-bot
-            export PREVIOUS_API_TAG=$(docker inspect --format='{{index .RepoTags 0}}' $(docker compose -f docker-compose.yml -f docker-compose.prod.yml ps -q api) 2>/dev/null || echo "none")
-            export PREVIOUS_BOT_TAG=$(docker inspect --format='{{index .RepoTags 0}}' $(docker compose -f docker-compose.yml -f docker-compose.prod.yml ps -q bot) 2>/dev/null || echo "none")
+            cd /opt/apps/med-reminder-bot
+
+            PREVIOUS_API_TAG=$(docker inspect --format='{{index .RepoTags 0}}' $(docker compose -f docker-compose.yml -f docker-compose.prod.yml ps -q api) 2>/dev/null || echo "none")
+            PREVIOUS_BOT_TAG=$(docker inspect --format='{{index .RepoTags 0}}' $(docker compose -f docker-compose.yml -f docker-compose.prod.yml ps -q bot) 2>/dev/null || echo "none")
+
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
             docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile migrate up migrate -d --wait
+            rsync -a --delete frontend-dist/ /opt/apps/caddy/med-frontend/
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+
             sleep 10
             if ! docker compose -f docker-compose.yml -f docker-compose.prod.yml ps api | grep -q "healthy"; then
               echo "API health check failed, rolling back..."
@@ -91,13 +111,14 @@ jobs:
               docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
               exit 1
             fi
+
             docker image prune -f
 
       - name: Deployment status
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            echo "::notice::Deployment to production succeeded for commit ${{ steps.meta.outputs.sha_short }}"
+            echo "::notice::Deployed ${{ steps.meta.outputs.sha_short }} to production"
           else
-            echo "::error::Deployment to production failed for commit ${{ steps.meta.outputs.sha_short }}"
+            echo "::error::Deploy failed for ${{ steps.meta.outputs.sha_short }}"
           fi
