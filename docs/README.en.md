@@ -12,6 +12,12 @@
   </p>
 
   <p>
+    <a href="https://t.me/MedNapominalkaBot">
+      <img src="https://img.shields.io/badge/Try_on_Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Try on Telegram" />
+    </a>
+  </p>
+
+  <p>
     <a href="../README.md">Русская версия</a>
   </p>
 </div>
@@ -41,8 +47,8 @@ Med Reminder Bot is a full-stack medication tracking system built as a Telegram 
       <td>Auto-generated daily checklists with per-medication taken/not-taken tracking; supports querying any date</td>
     </tr>
     <tr>
-      <td><strong>Smart Reminders</strong></td>
-      <td>Cron-based reminders at each medication's scheduled time with configurable follow-up repeat (1-60 min), snooze (5 / 15 / 30 min), and one-tap disable</td>
+      <td><strong>Reliable Reminders</strong></td>
+      <td>Cron-based reminders at each medication's scheduled time with configurable follow-up repeat (1-60 min), snooze (5 / 15 / 30 min), deduplication (<code>reminder_sent_at</code> field), and automatic catchup on bot restart</td>
     </tr>
     <tr>
       <td><strong>Multilingual</strong></td>
@@ -65,16 +71,16 @@ Med Reminder Bot is a full-stack medication tracking system built as a Telegram 
       <td>Redis Pub/Sub between API and Bot: creating or deleting a medication through the API triggers an immediate scheduler refresh in the bot</td>
     </tr>
     <tr>
-      <td><strong>Telegram Auth</strong></td>
-      <td>HMAC-SHA256 validation of Telegram WebApp <code>initData</code> with configurable token expiry</td>
+      <td><strong>JWT Session Auth</strong></td>
+      <td>Validate initial Telegram <code>initData</code> HMAC-SHA256, issue token pairs (access + refresh), rotate tokens with reuse detection</td>
     </tr>
     <tr>
       <td><strong>Rate Limiting</strong></td>
-      <td>Redis-backed sliding window rate limiter at the API level plus Nginx <code>limit_req</code> at the reverse proxy level</td>
+      <td>Redis-backed sliding window rate limiter at the API level plus <code>limit_req</code> at the reverse proxy (Nginx in dev, Caddy in prod)</td>
     </tr>
     <tr>
       <td><strong>Security Headers</strong></td>
-      <td>HSTS, CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, and Permissions-Policy configured in Nginx</td>
+      <td>HSTS, CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, and Permissions-Policy at the reverse proxy (Nginx in dev, Caddy in prod)</td>
     </tr>
   </tbody>
 </table>
@@ -93,10 +99,10 @@ Med Reminder Bot is a full-stack medication tracking system built as a Telegram 
         (React / Vite)           (aiogram 3 + APScheduler)
               |                         |
               v                         v
-           Nginx                  Redis Pub/Sub
-         (reverse proxy,          (medications channel)
-          static files,                 |
-          rate limiting)                |
+     Nginx (dev) / Caddy (prod)  Redis Pub/Sub
+       (reverse proxy,            (medications channel)
+        static files, rate limit,       |
+        security headers)               |
               |                         |
               v                         |
           FastAPI                       |
@@ -130,11 +136,12 @@ Container topology (Docker Compose):
     </tr>
   </thead>
   <tbody>
-    <tr><td rowspan="6"><strong>Backend</strong></td><td>Python</td><td>3.12</td><td>Runtime</td></tr>
+    <tr><td rowspan="7"><strong>Backend</strong></td><td>Python</td><td>3.12</td><td>Runtime</td></tr>
     <tr><td>FastAPI</td><td>0.115+</td><td>REST API framework</td></tr>
     <tr><td>SQLAlchemy</td><td>2.0+</td><td>Async ORM (asyncpg driver)</td></tr>
     <tr><td>Alembic</td><td>1.13+</td><td>Database migrations</td></tr>
     <tr><td>Pydantic</td><td>2.5+</td><td>Request/response validation</td></tr>
+    <tr><td>PyJWT</td><td>2.8+</td><td>JWT token signing and verification</td></tr>
     <tr><td>Uvicorn</td><td>0.34+</td><td>ASGI server</td></tr>
     <tr><td rowspan="3"><strong>Bot</strong></td><td>aiogram</td><td>3.2+</td><td>Telegram Bot framework</td></tr>
     <tr><td>APScheduler</td><td>3.10+</td><td>Cron and one-shot reminder scheduling</td></tr>
@@ -149,8 +156,9 @@ Container topology (Docker Compose):
     <tr><td>i18next</td><td>24.2</td><td>Internationalization</td></tr>
     <tr><td rowspan="2"><strong>Database</strong></td><td>PostgreSQL</td><td>16.6</td><td>Primary data store</td></tr>
     <tr><td>Redis</td><td>7.4</td><td>Rate limiting, Pub/Sub, bot FSM storage</td></tr>
-    <tr><td rowspan="2"><strong>Infrastructure</strong></td><td>Docker Compose</td><td>-</td><td>Container orchestration (dev, prod, migrate profiles)</td></tr>
-    <tr><td>Nginx</td><td>1.27</td><td>Reverse proxy, static file serving, security headers</td></tr>
+    <tr><td rowspan="3"><strong>Infrastructure</strong></td><td>Docker Compose</td><td>-</td><td>Container orchestration (dev, prod, migrate profiles)</td></tr>
+    <tr><td>Nginx</td><td>1.27</td><td>Reverse proxy in the dev stack, static file serving, security headers</td></tr>
+    <tr><td>Caddy</td><td>2.9</td><td>Reverse proxy in prod, automatic HTTPS (Let's Encrypt), HTTP/3</td></tr>
     <tr><td rowspan="3"><strong>CI/CD</strong></td><td>GitHub Actions</td><td>-</td><td>CI pipeline (7 parallel jobs) and deploy workflow</td></tr>
     <tr><td>GHCR</td><td>-</td><td>Container registry for API and Bot images</td></tr>
     <tr><td>SSH Deploy</td><td>-</td><td>Deploy with health check and automatic rollback</td></tr>
@@ -269,6 +277,11 @@ cp .env.example .env
     <tr><td><code>RATE_LIMIT_PER_MINUTE</code></td><td>Max API requests per IP per minute</td><td><code>60</code></td></tr>
     <tr><td><code>MAX_AUTH_AGE</code></td><td>Telegram auth data validity period in seconds</td><td><code>86400</code></td></tr>
     <tr><td><code>CORS_ORIGINS</code></td><td>Comma-separated allowed CORS origins (falls back to <code>MINI_APP_URL</code>)</td><td><em>empty</em></td></tr>
+    <tr><td><code>JWT_SECRET</code></td><td>Secret key for signing JWT tokens (generate: <code>python -c "import secrets; print(secrets.token_urlsafe(48))"</code>)</td><td><em>required</em></td></tr>
+    <tr><td><code>JWT_ACCESS_TTL_SECONDS</code></td><td>Access token lifetime in seconds</td><td><code>900</code> (15 minutes)</td></tr>
+    <tr><td><code>JWT_REFRESH_TTL_SECONDS</code></td><td>Refresh token lifetime in seconds</td><td><code>604800</code> (7 days)</td></tr>
+    <tr><td><code>JWT_ISSUER</code></td><td>JWT token issuer (for verification)</td><td><code>med-reminder-api</code></td></tr>
+    <tr><td><code>JWT_AUDIENCE</code></td><td>JWT token audience (for verification)</td><td><code>med-reminder-miniapp</code></td></tr>
   </tbody>
 </table>
 
@@ -318,6 +331,17 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-o
 
 The production configuration sets resource limits, runs Uvicorn with 4 workers, and enables `restart: unless-stopped` for all services.
 
+## Authentication
+
+The system uses **JWT session authentication** with token pairs and rotation:
+
+1. **Login** (`POST /api/auth/login`): Send Telegram Mini App `initData`. The API verifies the HMAC-SHA256 signature.
+2. **Token Pair**: The API returns `access_token` (15 minutes) and `refresh_token` (7 days).
+3. **Reuse Detection**: Each refresh token is bound to the device (User-Agent) and can only be used once. Reuse invalidates all user tokens.
+4. **Usage**: Send `Authorization: Bearer <access_token>` header with all protected requests.
+5. **Refresh** (`POST /api/auth/refresh`): When the access token expires, send the refresh token to get a new pair.
+6. **Logout** (`POST /api/auth/logout`): Revokes the refresh token.
+
 ## API Reference
 
 All endpoints return a consistent envelope:
@@ -330,7 +354,69 @@ All endpoints return a consistent envelope:
 }
 ```
 
-Authentication is performed via the `Authorization` header containing the Telegram Mini App `initData` string (optionally prefixed with `tma `).
+<details>
+<summary>Auth</summary>
+
+#### `POST /api/auth/login`
+
+User login with Telegram Mini App `initData`. Returns a token pair for authentication.
+
+**Request body:**
+
+```json
+{
+  "init_data": "query_id=..&user=..&..."
+}
+```
+
+**Response data:**
+
+```json
+{
+  "access_token": "eyJhbGc...",
+  "refresh_token": "...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "expires_at": 1705334400,
+  "refresh_expires_at": 1706539200
+}
+```
+
+#### `POST /api/auth/refresh`
+
+Obtain a new token pair when the access token expires.
+
+**Request body:**
+
+```json
+{
+  "refresh_token": "..."
+}
+```
+
+**Response data:** Same as `/login`.
+
+#### `POST /api/auth/logout`
+
+Revokes the refresh token.
+
+**Requires authentication.** Request body:
+
+```json
+{
+  "refresh_token": "..."
+}
+```
+
+**Response data:**
+
+```json
+{
+  "revoked": true
+}
+```
+
+</details>
 
 <details>
 <summary>Health</summary>

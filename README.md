@@ -12,6 +12,12 @@
   </p>
 
   <p>
+    <a href="https://t.me/MedNapominalkaBot">
+      <img src="https://img.shields.io/badge/Попробовать_в_Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Попробовать в Telegram" />
+    </a>
+  </p>
+
+  <p>
     <a href="docs/README.en.md">English version</a>
   </p>
 </div>
@@ -41,8 +47,8 @@ Med Reminder Bot -- полнофункциональная система для
       <td>Автоматическая генерация чеклиста на каждый день с отметкой принято/не принято по каждому лекарству; поддержка просмотра за любую дату</td>
     </tr>
     <tr>
-      <td><strong>Умные напоминания</strong></td>
-      <td>Cron-напоминания в назначенное время с настраиваемым повтором (1-60 мин), отложенным напоминанием (5 / 15 / 30 мин) и отключением в одно нажатие</td>
+      <td><strong>Надежные напоминания</strong></td>
+      <td>Cron-напоминания в назначенное время с настраиваемым повтором (1-60 мин), отложенным напоминанием (5 / 15 / 30 мин), защитой от переотправки (поле <code>reminder_sent_at</code>) и автоматическим восстановлением пропущенных при перезагрузке</td>
     </tr>
     <tr>
       <td><strong>Мультиязычность</strong></td>
@@ -65,16 +71,16 @@ Med Reminder Bot -- полнофункциональная система для
       <td>Redis Pub/Sub между API и ботом: создание или удаление лекарства через API мгновенно обновляет планировщик напоминаний бота</td>
     </tr>
     <tr>
-      <td><strong>Аутентификация Telegram</strong></td>
-      <td>Валидация HMAC-SHA256 подписи Telegram WebApp <code>initData</code> с настраиваемым сроком действия токена</td>
+      <td><strong>JWT Сессионная аутентификация</strong></td>
+      <td>Валидация инициального Telegram <code>initData</code> HMAC-SHA256, выдача пары токенов (access + refresh), ротация токенов с защитой от переиспользования</td>
     </tr>
     <tr>
       <td><strong>Rate Limiting</strong></td>
-      <td>Redis-бэкенд скользящего окна на уровне API + Nginx <code>limit_req</code> на уровне реверс-прокси</td>
+      <td>Redis-бэкенд скользящего окна на уровне API + <code>limit_req</code> на уровне реверс-прокси (Nginx в dev, Caddy в prod)</td>
     </tr>
     <tr>
       <td><strong>Заголовки безопасности</strong></td>
-      <td>HSTS, CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy и Permissions-Policy в конфигурации Nginx</td>
+      <td>HSTS, CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy и Permissions-Policy на уровне реверс-прокси (Nginx в dev, Caddy в prod)</td>
     </tr>
   </tbody>
 </table>
@@ -93,10 +99,10 @@ Med Reminder Bot -- полнофункциональная система для
         (React / Vite)           (aiogram 3 + APScheduler)
               |                         |
               v                         v
-           Nginx                  Redis Pub/Sub
-         (реверс-прокси,          (канал medications)
-          статика,                      |
-          rate limiting)                |
+     Nginx (dev) / Caddy (prod)  Redis Pub/Sub
+       (реверс-прокси,            (канал medications)
+        статика, rate limiting,         |
+        security headers)               |
               |                         |
               v                         |
           FastAPI                       |
@@ -130,11 +136,12 @@ Med Reminder Bot -- полнофункциональная система для
     </tr>
   </thead>
   <tbody>
-    <tr><td rowspan="6"><strong>Backend</strong></td><td>Python</td><td>3.12</td><td>Среда выполнения</td></tr>
+    <tr><td rowspan="7"><strong>Backend</strong></td><td>Python</td><td>3.12</td><td>Среда выполнения</td></tr>
     <tr><td>FastAPI</td><td>0.115+</td><td>REST API фреймворк</td></tr>
     <tr><td>SQLAlchemy</td><td>2.0+</td><td>Асинхронная ORM (драйвер asyncpg)</td></tr>
     <tr><td>Alembic</td><td>1.13+</td><td>Миграции базы данных</td></tr>
     <tr><td>Pydantic</td><td>2.5+</td><td>Валидация запросов/ответов</td></tr>
+    <tr><td>PyJWT</td><td>2.8+</td><td>Подпись и верификация JWT токенов</td></tr>
     <tr><td>Uvicorn</td><td>0.34+</td><td>ASGI-сервер</td></tr>
     <tr><td rowspan="3"><strong>Bot</strong></td><td>aiogram</td><td>3.2+</td><td>Фреймворк Telegram-бота</td></tr>
     <tr><td>APScheduler</td><td>3.10+</td><td>Планировщик cron- и одноразовых напоминаний</td></tr>
@@ -149,8 +156,9 @@ Med Reminder Bot -- полнофункциональная система для
     <tr><td>i18next</td><td>24.2</td><td>Интернационализация</td></tr>
     <tr><td rowspan="2"><strong>База данных</strong></td><td>PostgreSQL</td><td>16.6</td><td>Основное хранилище</td></tr>
     <tr><td>Redis</td><td>7.4</td><td>Rate limiting, Pub/Sub</td></tr>
-    <tr><td rowspan="2"><strong>Инфраструктура</strong></td><td>Docker Compose</td><td>-</td><td>Оркестрация контейнеров (dev, prod, migrate)</td></tr>
-    <tr><td>Nginx</td><td>1.27</td><td>Реверс-прокси, раздача статики, заголовки безопасности</td></tr>
+    <tr><td rowspan="3"><strong>Инфраструктура</strong></td><td>Docker Compose</td><td>-</td><td>Оркестрация контейнеров (dev, prod, migrate)</td></tr>
+    <tr><td>Nginx</td><td>1.27</td><td>Реверс-прокси в dev-стеке, раздача статики, заголовки безопасности</td></tr>
+    <tr><td>Caddy</td><td>2.9</td><td>Реверс-прокси в prod, автоматический HTTPS (Let's Encrypt), HTTP/3</td></tr>
     <tr><td rowspan="3"><strong>CI/CD</strong></td><td>GitHub Actions</td><td>-</td><td>CI-пайплайн (7 параллельных задач) и деплой</td></tr>
     <tr><td>GHCR</td><td>-</td><td>Реестр контейнеров для образов API и бота</td></tr>
     <tr><td>SSH Deploy</td><td>-</td><td>Деплой с проверкой здоровья и автоматическим откатом</td></tr>
@@ -269,6 +277,11 @@ cp .env.example .env
     <tr><td><code>RATE_LIMIT_PER_MINUTE</code></td><td>Максимум запросов к API на IP в минуту</td><td><code>60</code></td></tr>
     <tr><td><code>MAX_AUTH_AGE</code></td><td>Срок действия Telegram auth данных в секундах</td><td><code>86400</code></td></tr>
     <tr><td><code>CORS_ORIGINS</code></td><td>Разрешенные CORS-источники через запятую (фоллбэк на <code>MINI_APP_URL</code>)</td><td><em>не задано</em></td></tr>
+    <tr><td><code>JWT_SECRET</code></td><td>Тайный ключ для подписания JWT токенов (сгенерировать: <code>python -c "import secrets; print(secrets.token_urlsafe(48))"</code>)</td><td><em>обязательно</em></td></tr>
+    <tr><td><code>JWT_ACCESS_TTL_SECONDS</code></td><td>Время жизни access-токена в секундах</td><td><code>900</code> (15 минут)</td></tr>
+    <tr><td><code>JWT_REFRESH_TTL_SECONDS</code></td><td>Время жизни refresh-токена в секундах</td><td><code>604800</code> (7 дней)</td></tr>
+    <tr><td><code>JWT_ISSUER</code></td><td>Издатель JWT токена (для верификации)</td><td><code>med-reminder-api</code></td></tr>
+    <tr><td><code>JWT_AUDIENCE</code></td><td>Целевая аудитория JWT токена (для верификации)</td><td><code>med-reminder-miniapp</code></td></tr>
   </tbody>
 </table>
 
@@ -318,6 +331,17 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-o
 
 Продакшен-конфигурация устанавливает лимиты ресурсов, запускает Uvicorn с 4 воркерами и включает `restart: unless-stopped` для всех сервисов.
 
+## Аутентификация
+
+Система использует **JWT сессионную аутентификацию** с парой токенов и ротацией:
+
+1. **Вход** (`POST /api/auth/login`): Отправьте Telegram Mini App `initData`. API проверяет HMAC-SHA256 подпись.
+2. **Выдача пары**: API возвращает `access_token` (15 минут) и `refresh_token` (7 дней).
+3. **Защита от переиспользования**: Каждый refresh токен привязан к устройству (User-Agent) и может быть использован только один раз. При переиспользовании все токены пользователя аннулируются.
+4. **Использование**: На все защищённые запросы отправляйте заголовок `Authorization: Bearer <access_token>`.
+5. **Обновление** (`POST /api/auth/refresh`): Когда access токен истёк, отправьте refresh токен для получения новой пары.
+6. **Выход** (`POST /api/auth/logout`): Аннулирует refresh токен.
+
 ## Справочник API
 
 Все эндпоинты возвращают ответ в едином формате:
@@ -330,7 +354,69 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-o
 }
 ```
 
-Аутентификация выполняется через заголовок `Authorization`, содержащий строку `initData` из Telegram Mini App (опционально с префиксом `tma `).
+<details>
+<summary>Auth</summary>
+
+#### `POST /api/auth/login`
+
+Вход пользователя с помощью Telegram Mini App `initData`. Возвращает пару токенов для аутентификации.
+
+**Тело запроса:**
+
+```json
+{
+  "init_data": "query_id=..&user=..&..."
+}
+```
+
+**Данные ответа:**
+
+```json
+{
+  "access_token": "eyJhbGc...",
+  "refresh_token": "...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "expires_at": 1705334400,
+  "refresh_expires_at": 1706539200
+}
+```
+
+#### `POST /api/auth/refresh`
+
+Получение новой пары токенов при истечении access токена.
+
+**Тело запроса:**
+
+```json
+{
+  "refresh_token": "..."
+}
+```
+
+**Данные ответа:** то же самое, что в `/login`.
+
+#### `POST /api/auth/logout`
+
+Аннулирует refresh токен.
+
+**Требует аутентификации.** Тело запроса:
+
+```json
+{
+  "refresh_token": "..."
+}
+```
+
+**Данные ответа:**
+
+```json
+{
+  "revoked": true
+}
+```
+
+</details>
 
 <details>
 <summary>Health</summary>
