@@ -58,9 +58,7 @@ class TestAdminBanUser:
 
 
 class TestBanRevokesRefreshTokens:
-    async def test_ban_revokes_all_refresh_tokens_for_target_user(
-        self, admin_client: AsyncClient
-    ):
+    async def test_ban_revokes_all_refresh_tokens_for_target_user(self, admin_client: AsyncClient):
         async with TestSessionLocal() as session:
             target = User(telegram_id=555444333, language="en", is_blocked=False)
             session.add(target)
@@ -88,10 +86,14 @@ class TestBanRevokesRefreshTokens:
 
         async with TestSessionLocal() as session:
             rows = (
-                await session.execute(
-                    select(RefreshToken).where(RefreshToken.user_id == target_id)
+                (
+                    await session.execute(
+                        select(RefreshToken).where(RefreshToken.user_id == target_id)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             assert len(rows) == 2
             assert all(r.revoked_at is not None for r in rows)
 

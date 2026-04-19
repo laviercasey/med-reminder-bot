@@ -40,9 +40,7 @@ class TestCreate:
 class TestFindByHash:
     async def test_returns_active_token(self, repo, test_user):
         expires = datetime.now(UTC) + timedelta(days=7)
-        await repo.create(
-            user_id=test_user.id, token_hash="b" * 64, expires_at=expires
-        )
+        await repo.create(user_id=test_user.id, token_hash="b" * 64, expires_at=expires)
         found = await repo.find_by_hash("b" * 64)
         assert found is not None
         assert found.token_hash == "b" * 64
@@ -55,9 +53,7 @@ class TestFindByHash:
 class TestRevoke:
     async def test_sets_revoked_at_and_replaced_by(self, repo, test_user, test_session):
         expires = datetime.now(UTC) + timedelta(days=7)
-        token = await repo.create(
-            user_id=test_user.id, token_hash="d" * 64, expires_at=expires
-        )
+        token = await repo.create(user_id=test_user.id, token_hash="d" * 64, expires_at=expires)
         await repo.revoke(token, replaced_by="e" * 64)
         await test_session.refresh(token)
         assert token.revoked_at is not None
@@ -65,16 +61,10 @@ class TestRevoke:
 
 
 class TestRevokeAllForUser:
-    async def test_sets_revoked_at_on_active_only(
-        self, repo, test_user, other_user, test_session
-    ):
+    async def test_sets_revoked_at_on_active_only(self, repo, test_user, other_user, test_session):
         expires = datetime.now(UTC) + timedelta(days=7)
-        active1 = await repo.create(
-            user_id=test_user.id, token_hash="1" * 64, expires_at=expires
-        )
-        active2 = await repo.create(
-            user_id=test_user.id, token_hash="2" * 64, expires_at=expires
-        )
+        active1 = await repo.create(user_id=test_user.id, token_hash="1" * 64, expires_at=expires)
+        active2 = await repo.create(user_id=test_user.id, token_hash="2" * 64, expires_at=expires)
         already_revoked = await repo.create(
             user_id=test_user.id, token_hash="3" * 64, expires_at=expires
         )
@@ -96,7 +86,12 @@ class TestRevokeAllForUser:
         assert active1.revoked_at is not None
         assert active2.revoked_at is not None
         assert already_revoked.revoked_at is not None
-        assert abs(
-            (already_revoked.revoked_at.replace(tzinfo=UTC) - original_revoke_time).total_seconds()
-        ) < 5
+        assert (
+            abs(
+                (
+                    already_revoked.revoked_at.replace(tzinfo=UTC) - original_revoke_time
+                ).total_seconds()
+            )
+            < 5
+        )
         assert other_token.revoked_at is None

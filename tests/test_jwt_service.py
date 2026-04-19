@@ -109,9 +109,7 @@ class TestGenerateRefreshToken:
     def test_is_url_safe_and_long_enough(self):
         token = jwt_service.generate_refresh_token()
         assert len(token) >= 40
-        allowed = set(
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-        )
+        allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
         assert set(token).issubset(allowed)
 
     def test_is_unique(self):

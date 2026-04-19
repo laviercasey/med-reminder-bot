@@ -125,9 +125,7 @@ class TestRefresh:
         with pytest.raises(UnauthorizedError, match="refresh_token_expired"):
             await auth_service.refresh(refresh_token=raw)
 
-    async def test_detects_reuse_and_revokes_all_user_tokens(
-        self, auth_service, test_session
-    ):
+    async def test_detects_reuse_and_revokes_all_user_tokens(self, auth_service, test_session):
         init_data = build_init_data(bot_token=TEST_BOT_TOKEN, telegram_id=TEST_TELEGRAM_ID)
         first = await auth_service.login(init_data=init_data)
         await auth_service.login(init_data=init_data)
@@ -146,9 +144,7 @@ class TestRefresh:
         first = await auth_service.login(init_data=init_data)
 
         user = (
-            await test_session.execute(
-                select(User).where(User.telegram_id == TEST_TELEGRAM_ID)
-            )
+            await test_session.execute(select(User).where(User.telegram_id == TEST_TELEGRAM_ID))
         ).scalar_one()
         user.is_blocked = True
         await test_session.commit()

@@ -100,7 +100,8 @@ class TestGetCurrentUser:
     async def test_rejects_expired_token(self, probe_client, test_user, monkeypatch):
         real_time = time.time
         monkeypatch.setattr(
-            jwt_service.time, "time",
+            jwt_service.time,
+            "time",
             lambda: int(real_time()) - api_config.jwt_access_ttl - 60,
         )
         token, _ = jwt_service.issue_access(test_user)
