@@ -198,7 +198,9 @@ async def send_medication_reminder(bot: Bot, telegram_id: int, medication_id: in
             if checklist and checklist.reminder_sent_at is not None:
                 sent_today = checklist.reminder_sent_at.astimezone(tz).date() == today
                 if sent_today:
-                    logger.info("Skipping reminder for med %s - already sent today", medication.name)
+                    logger.info(
+                        "Skipping reminder for med %s - already sent today", medication.name
+                    )
                     return
 
             if not checklist:

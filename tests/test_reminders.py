@@ -79,7 +79,9 @@ async def user_with_med(reminders_db):
 async def test_send_reminder_marks_reminder_sent_at(bot, user_with_med, reminders_db):
     from bot.services.reminders import send_medication_reminder
 
-    await send_medication_reminder(bot, user_with_med["telegram_id"], user_with_med["medication_id"])
+    await send_medication_reminder(
+        bot, user_with_med["telegram_id"], user_with_med["medication_id"]
+    )
 
     bot.send_message.assert_awaited_once()
     async with reminders_db() as session:
@@ -95,7 +97,9 @@ async def test_send_reminder_skips_if_already_sent_today(bot, user_with_med, rem
         cl.reminder_sent_at = datetime.now(UTC)
         await session.commit()
 
-    await send_medication_reminder(bot, user_with_med["telegram_id"], user_with_med["medication_id"])
+    await send_medication_reminder(
+        bot, user_with_med["telegram_id"], user_with_med["medication_id"]
+    )
 
     bot.send_message.assert_not_awaited()
 
@@ -108,7 +112,9 @@ async def test_send_reminder_skips_if_already_taken(bot, user_with_med, reminder
         cl.status = True
         await session.commit()
 
-    await send_medication_reminder(bot, user_with_med["telegram_id"], user_with_med["medication_id"])
+    await send_medication_reminder(
+        bot, user_with_med["telegram_id"], user_with_med["medication_id"]
+    )
 
     bot.send_message.assert_not_awaited()
 
@@ -158,7 +164,9 @@ async def test_catch_up_skips_future_due(bot, reminders_db):
         user = User(telegram_id=222333444, language="ru", is_blocked=False)
         session.add(user)
         await session.flush()
-        settings = UserSettings(user_id=user.id, reminders_enabled=True, reminder_repeat_minutes=30)
+        settings = UserSettings(
+            user_id=user.id, reminders_enabled=True, reminder_repeat_minutes=30
+        )
         session.add(settings)
         med = Medication(user_id=user.id, name="Future", schedule="custom", time=future_time)
         session.add(med)
@@ -184,7 +192,9 @@ async def test_catch_up_skips_reminders_disabled(bot, user_with_med, reminders_d
         from sqlalchemy import select as _select
 
         settings_row = (
-            await session.execute(_select(UserSettings).where(UserSettings.user_id == user_with_med["user_id"]))
+            await session.execute(
+                _select(UserSettings).where(UserSettings.user_id == user_with_med["user_id"])
+            )
         ).scalar_one()
         settings_row.reminders_enabled = False
         await session.commit()
