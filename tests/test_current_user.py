@@ -2,7 +2,6 @@ import time
 from typing import AsyncGenerator
 
 import jwt as pyjwt
-import pytest
 import pytest_asyncio
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse

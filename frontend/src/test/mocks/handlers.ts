@@ -51,22 +51,3 @@ export function createSuccessResponse<T>(data: T): ApiResponse<T> {
 export function createErrorResponse(error: string): ApiResponse<null> {
   return { success: false, data: null, error };
 }
-
-export function mockFetchSuccess<T>(data: ApiResponse<T>) {
-  return vi.fn().mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve(data),
-  });
-}
-
-export function mockFetchError(status: number, error: string) {
-  return vi.fn().mockResolvedValue({
-    ok: false,
-    status,
-    json: () => Promise.resolve({ error }),
-  });
-}
-
-export function mockFetchNetworkError() {
-  return vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
-}

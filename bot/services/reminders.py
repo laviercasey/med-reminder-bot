@@ -267,7 +267,6 @@ async def catch_up_missed_reminders(bot: Bot) -> None:
         )
         rows = list((await session.execute(query)).all())
 
-    now_utc = datetime.now(UTC)
     sent_count = 0
     for user, medication, checklist, user_settings in rows:
         if user_settings and not user_settings.reminders_enabled:

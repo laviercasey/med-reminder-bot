@@ -1,11 +1,10 @@
 from datetime import UTC, datetime, timedelta
 
-import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.services.auth.repository import RefreshTokenRepository
-from shared.database.models import RefreshToken, User
+from shared.database.models import User
 
 
 @pytest_asyncio.fixture

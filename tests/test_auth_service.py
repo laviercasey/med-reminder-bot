@@ -130,7 +130,7 @@ class TestRefresh:
     ):
         init_data = build_init_data(bot_token=TEST_BOT_TOKEN, telegram_id=TEST_TELEGRAM_ID)
         first = await auth_service.login(init_data=init_data)
-        second = await auth_service.login(init_data=init_data)
+        await auth_service.login(init_data=init_data)
 
         await auth_service.refresh(refresh_token=first.refresh_token)
 

@@ -1,15 +1,12 @@
 from typing import AsyncGenerator
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from tests.conftest import (
     TEST_BOT_TOKEN,
-    TEST_TELEGRAM_ID,
     TestSessionLocal,
-    build_init_data,
 )
 
 
