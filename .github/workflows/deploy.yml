@@ -106,10 +106,7 @@ jobs:
               -v med_frontend:/dest \
               -v /opt/apps/med-reminder-bot/frontend-dist:/src:ro \
               alpine sh -c "rm -rf /dest/* && cp -R /src/. /dest/"
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
-
-            sleep 10
-            if ! docker compose -f docker-compose.yml -f docker-compose.prod.yml ps api | grep -q "healthy"; then
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans --wait --wait-timeout 120 || {
               echo "API health check failed, rolling back..."
               docker compose -f docker-compose.yml -f docker-compose.prod.yml down
               if [ "$PREVIOUS_API_TAG" != "none" ]; then
@@ -117,7 +114,7 @@ jobs:
               fi
               docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
               exit 1
-            fi
+            }
 
             docker image prune -f
 
