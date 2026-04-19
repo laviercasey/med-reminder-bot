@@ -11,6 +11,7 @@ from api.core.config import api_config
 from api.core.exceptions import AppException
 from api.middleware.rate_limit import RateLimitMiddleware
 from api.services.admin.router import router as admin_router
+from api.services.auth.router import router as auth_router
 from api.services.checklist.router import router as checklist_router
 from api.services.medication.router import router as medication_router
 from api.services.settings.router import router as settings_router
@@ -73,6 +74,7 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type"],
     )
 
+    app.include_router(auth_router, prefix="/api")
     app.include_router(medication_router, prefix="/api")
     app.include_router(checklist_router, prefix="/api")
     app.include_router(settings_router, prefix="/api")

@@ -1,53 +1,127 @@
-import { retrieveRawInitData } from "@telegram-apps/sdk-react";
 import { API_URL } from "@/shared/config";
+import {
+  ensureFreshAccessToken,
+  forceRefresh,
+} from "@/shared/auth/refresh-coordinator";
+import { clearTokens } from "@/shared/auth/token-store";
 import type { ApiResponse } from "./types";
 
-function getInitData(): string {
+const REFRESHABLE_ERRORS = new Set(["token_expired", "invalid_token"]);
+
+interface ParsedResponse<T> {
+  ok: boolean;
+  status: number;
+  body: ApiResponse<T> | { error?: string } | null;
+  parseFailed: boolean;
+}
+
+async function parseResponse<T>(response: Response): Promise<ParsedResponse<T>> {
+  let body: ApiResponse<T> | { error?: string } | null = null;
+  let parseFailed = false;
   try {
-    return retrieveRawInitData() ?? "";
+    body = (await response.json()) as ApiResponse<T> | { error?: string };
   } catch {
-    return "";
+    parseFailed = true;
   }
+  return { ok: response.ok, status: response.status, body, parseFailed };
+}
+
+function toEnvelope<T>(parsed: ParsedResponse<T>): ApiResponse<T> {
+  if (!parsed.ok) {
+    if (parsed.parseFailed || parsed.body === null) {
+      return {
+        success: false,
+        data: null,
+        error: `Request failed with status ${parsed.status}`,
+      };
+    }
+    const errorField = (parsed.body as { error?: string }).error;
+    return {
+      success: false,
+      data: null,
+      error: errorField ?? `Request failed with status ${parsed.status}`,
+    };
+  }
+
+  if (parsed.parseFailed) {
+    return {
+      success: false,
+      data: null,
+      error: "Failed to parse server response",
+    };
+  }
+
+  if (
+    parsed.body &&
+    typeof parsed.body === "object" &&
+    "success" in parsed.body
+  ) {
+    return parsed.body as ApiResponse<T>;
+  }
+
+  return { success: true, data: parsed.body as T, error: null };
+}
+
+function isRefreshable<T>(parsed: ParsedResponse<T>): boolean {
+  if (parsed.status !== 401 || parsed.body === null) {
+    return false;
+  }
+  const errorField = (parsed.body as { error?: string }).error;
+  return errorField !== undefined && REFRESHABLE_ERRORS.has(errorField);
+}
+
+async function fetchWithToken(
+  endpoint: string,
+  options: RequestInit,
+  accessToken: string
+): Promise<Response> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${accessToken}`,
+    ...(options.headers as Record<string, string> | undefined),
+  };
+  return fetch(`${API_URL}${endpoint}`, { ...options, headers });
 }
 
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const initData = getInitData();
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(initData ? { Authorization: `tma ${initData}` } : {}),
-    ...(options.headers as Record<string, string>),
-  };
-
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => null);
+  let accessToken: string;
+  try {
+    accessToken = await ensureFreshAccessToken();
+  } catch (error) {
     return {
       success: false,
       data: null,
-      error: errorBody?.error ?? `Request failed with status ${response.status}`,
+      error:
+        error instanceof Error ? error.message : "auth_unavailable",
     };
   }
 
-  let body: unknown;
+  const firstResponse = await fetchWithToken(endpoint, options, accessToken);
+  const firstParsed = await parseResponse<T>(firstResponse);
+
+  if (!isRefreshable(firstParsed)) {
+    return toEnvelope<T>(firstParsed);
+  }
+
+  let rotated: string;
   try {
-    body = await response.json();
+    rotated = await forceRefresh();
   } catch {
-    return { success: false, data: null, error: "Failed to parse server response" };
+    clearTokens();
+    return toEnvelope<T>(firstParsed);
   }
 
-  if (body && typeof body === "object" && "success" in body) {
-    return body as ApiResponse<T>;
+  const secondResponse = await fetchWithToken(endpoint, options, rotated);
+  const secondParsed = await parseResponse<T>(secondResponse);
+
+  if (secondParsed.status === 401) {
+    clearTokens();
   }
 
-  return { success: true, data: body as T, error: null };
+  return toEnvelope<T>(secondParsed);
 }
 
 export const apiClient = {

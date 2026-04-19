@@ -67,6 +67,7 @@ class Checklist(Base):
         Integer, ForeignKey("medications.id", ondelete="CASCADE"), nullable=False
     )
     status = Column(Boolean, default=False)
+    reminder_sent_at = Column(DateTime(timezone=True), nullable=True)
     updated_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
@@ -85,6 +86,21 @@ class AdminLog(Base):
     action = Column(String(100), nullable=False)
     details = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash = Column(String(64), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    replaced_by = Column(String(64), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+
+    user = relationship("User", backref="refresh_tokens")
 
 
 class UserSettings(Base):

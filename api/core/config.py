@@ -46,5 +46,25 @@ class ApiConfig:
     def domain(self) -> str:
         return self._settings.DOMAIN
 
+    @property
+    def jwt_secret(self) -> str:
+        return self._settings.JWT_SECRET
+
+    @property
+    def jwt_access_ttl(self) -> int:
+        return self._settings.JWT_ACCESS_TTL_SECONDS
+
+    @property
+    def jwt_refresh_ttl(self) -> int:
+        return self._settings.JWT_REFRESH_TTL_SECONDS
+
+    @property
+    def jwt_issuer(self) -> str:
+        return self._settings.JWT_ISSUER
+
+    @property
+    def jwt_audience(self) -> str:
+        return self._settings.JWT_AUDIENCE
+
 
 api_config = ApiConfig(shared_settings)

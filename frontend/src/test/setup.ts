@@ -40,3 +40,26 @@ vi.mock("@telegram-apps/sdk-react", () => ({
     off: vi.fn(),
   }),
 }));
+
+beforeEach(async () => {
+  const { setTokens, clearTokens } = await import("@/shared/auth/token-store");
+  const { resetCoordinator } = await import("@/shared/auth/refresh-coordinator");
+  const { resetBootstrap } = await import("@/shared/auth/bootstrap");
+  resetBootstrap();
+  clearTokens();
+  resetCoordinator();
+  setTokens({
+    accessToken: "test-access-token",
+    accessExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+    refreshToken: "test-refresh-token",
+  });
+});
+
+afterEach(async () => {
+  const { clearTokens } = await import("@/shared/auth/token-store");
+  const { resetCoordinator } = await import("@/shared/auth/refresh-coordinator");
+  const { resetBootstrap } = await import("@/shared/auth/bootstrap");
+  resetBootstrap();
+  clearTokens();
+  resetCoordinator();
+});

@@ -12,6 +12,14 @@ os.environ.setdefault("DB_PASS", "test")
 os.environ.setdefault("DB_NAME", "test")
 os.environ.setdefault("ADMIN_IDS", "999999999")
 os.environ.setdefault("ENVIRONMENT", "development")
+os.environ.setdefault(
+    "JWT_SECRET",
+    "test-secret-at-least-32-bytes-xxxxxxxxxxxxxxxxxxxxxxxx",
+)
+os.environ.setdefault("JWT_ACCESS_TTL_SECONDS", "900")
+os.environ.setdefault("JWT_REFRESH_TTL_SECONDS", "604800")
+os.environ.setdefault("JWT_ISSUER", "med-reminder-api")
+os.environ.setdefault("JWT_AUDIENCE", "med-reminder-miniapp")
 
 import pytest
 import pytest_asyncio
@@ -148,13 +156,46 @@ def valid_init_data():
 
 
 @pytest.fixture
-def auth_headers(valid_init_data) -> dict[str, str]:
-    return {"Authorization": f"tma {valid_init_data()}"}
+def access_token_for():
+    def _build(user: User) -> str:
+        from api.services.auth import jwt_service
+
+        token, _ = jwt_service.issue_access(user)
+        return token
+
+    return _build
 
 
-@pytest.fixture
-def admin_auth_headers(valid_init_data) -> dict[str, str]:
-    return {"Authorization": f"tma {valid_init_data(telegram_id=TEST_ADMIN_TELEGRAM_ID)}"}
+@pytest_asyncio.fixture
+async def refresh_token_for(test_session: AsyncSession):
+    from datetime import UTC, datetime, timedelta
+
+    from api.core.config import api_config
+    from api.services.auth import jwt_service
+    from shared.database.models import RefreshToken
+
+    async def _build(user: User) -> str:
+        raw = jwt_service.generate_refresh_token()
+        row = RefreshToken(
+            user_id=user.id,
+            token_hash=jwt_service.hash_refresh(raw),
+            expires_at=datetime.now(UTC) + timedelta(seconds=api_config.jwt_refresh_ttl),
+        )
+        test_session.add(row)
+        await test_session.commit()
+        return raw
+
+    return _build
+
+
+@pytest_asyncio.fixture
+async def auth_headers(test_user, access_token_for) -> dict[str, str]:
+    return {"Authorization": f"Bearer {access_token_for(test_user)}"}
+
+
+@pytest_asyncio.fixture
+async def admin_auth_headers(test_admin, access_token_for) -> dict[str, str]:
+    return {"Authorization": f"Bearer {access_token_for(test_admin)}"}
 
 
 def _create_test_app(

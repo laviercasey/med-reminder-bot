@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from aiogram import Bot
@@ -60,6 +60,17 @@ async def setup_daily_reminders(bot: Bot) -> None:
         CronTrigger(hour=0, minute=1, timezone=DEFAULT_TZ),
         args=[bot],
         id="generate_checklists",
+        coalesce=True,
+        misfire_grace_time=3600,
+    )
+
+    scheduler.add_job(
+        setup_medication_reminders,
+        CronTrigger(minute=0, timezone=DEFAULT_TZ),
+        args=[bot],
+        id="periodic_resync",
+        coalesce=True,
+        misfire_grace_time=600,
     )
 
     await setup_medication_reminders(bot)
@@ -67,17 +78,11 @@ async def setup_daily_reminders(bot: Bot) -> None:
     if not scheduler.running:
         scheduler.start()
 
+    await catch_up_missed_reminders(bot)
+
 
 async def setup_medication_reminders(bot: Bot) -> None:
     logger.info("Setting up medication reminders")
-
-    existing_reminder_ids = [
-        j.id
-        for j in scheduler.get_jobs()
-        if j.id.startswith("reminder_") or j.id.startswith("followup_")
-    ]
-    for job_id in existing_reminder_ids:
-        scheduler.remove_job(job_id)
 
     async with get_session() as session:
         query = (
@@ -88,6 +93,7 @@ async def setup_medication_reminders(bot: Bot) -> None:
         )
 
         result = await session.execute(query)
+        current_reminder_ids: set[str] = set()
 
         for user, medication, user_settings in result:
             hour = medication.time.hour
@@ -95,6 +101,7 @@ async def setup_medication_reminders(bot: Bot) -> None:
             tz = _get_user_tz(user_settings)
 
             job_id = f"reminder_{medication.id}"
+            current_reminder_ids.add(job_id)
 
             scheduler.add_job(
                 send_medication_reminder,
@@ -102,7 +109,13 @@ async def setup_medication_reminders(bot: Bot) -> None:
                 args=[bot, user.telegram_id, medication.id],
                 id=job_id,
                 replace_existing=True,
+                coalesce=True,
+                misfire_grace_time=300,
             )
+
+    for j in scheduler.get_jobs():
+        if j.id.startswith("reminder_") and j.id not in current_reminder_ids:
+            scheduler.remove_job(j.id)
 
 
 async def generate_daily_checklists(bot: Bot) -> None:
@@ -182,6 +195,12 @@ async def send_medication_reminder(bot: Bot, telegram_id: int, medication_id: in
                 logger.info("Skipping reminder for med %s - already taken", medication.name)
                 return
 
+            if checklist and checklist.reminder_sent_at is not None:
+                sent_today = checklist.reminder_sent_at.astimezone(tz).date() == today
+                if sent_today:
+                    logger.info("Skipping reminder for med %s - already sent today", medication.name)
+                    return
+
             if not checklist:
                 checklist = Checklist(
                     user_id=user.id,
@@ -190,7 +209,7 @@ async def send_medication_reminder(bot: Bot, telegram_id: int, medication_id: in
                     status=False,
                 )
                 session.add(checklist)
-                await session.commit()
+                await session.flush()
 
             reminder_text = get_text("reminder", user.language, name=medication.name)
 
@@ -202,6 +221,8 @@ async def send_medication_reminder(bot: Bot, telegram_id: int, medication_id: in
                 reply_markup=get_reminder_action_keyboard(checklist.id, user.language),
             )
             _save_reminder_message(telegram_id, medication_id, sent.message_id)
+            checklist.reminder_sent_at = datetime.now(UTC)
+            await session.commit()
 
             repeat_minutes = settings.REMINDER_RETRY_MINUTES
             if user_settings:
@@ -226,6 +247,44 @@ async def send_medication_reminder(bot: Bot, telegram_id: int, medication_id: in
 
     except Exception as e:
         logger.error("Error sending reminder: %s", e, exc_info=e)
+
+
+async def catch_up_missed_reminders(bot: Bot) -> None:
+    logger.info("Running catch-up for missed reminders")
+
+    async with get_session() as session:
+        query = (
+            select(User, Medication, Checklist, UserSettings)
+            .join(Medication, User.id == Medication.user_id)
+            .join(
+                Checklist,
+                (Checklist.medication_id == Medication.id) & (Checklist.user_id == User.id),
+            )
+            .outerjoin(UserSettings, User.id == UserSettings.user_id)
+            .where(User.is_blocked.is_(False))
+            .where(Checklist.status.is_(False))
+            .where(Checklist.reminder_sent_at.is_(None))
+        )
+        rows = list((await session.execute(query)).all())
+
+    now_utc = datetime.now(UTC)
+    sent_count = 0
+    for user, medication, checklist, user_settings in rows:
+        if user_settings and not user_settings.reminders_enabled:
+            continue
+        tz = _get_user_tz(user_settings)
+        if checklist.date != _today(tz):
+            continue
+        due_dt = datetime.combine(checklist.date, medication.time, tz)
+        if due_dt > datetime.now(tz):
+            continue
+        try:
+            await send_medication_reminder(bot, user.telegram_id, medication.id)
+            sent_count += 1
+        except Exception as e:
+            logger.error("Catch-up send failed for med %s: %s", medication.id, e, exc_info=e)
+
+    logger.info("Catch-up finished, sent %d missed reminders", sent_count)
 
 
 async def send_followup_reminder(bot: Bot, telegram_id: int, medication_id: int) -> None:

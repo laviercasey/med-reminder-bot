@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
     ENVIRONMENT: str = "production"
 
+    JWT_SECRET: str
+    JWT_ACCESS_TTL_SECONDS: int = 900
+    JWT_REFRESH_TTL_SECONDS: int = 604800
+    JWT_ISSUER: str = "med-reminder-api"
+    JWT_AUDIENCE: str = "med-reminder-miniapp"
+
     @property
     def database_url(self) -> URL:
         return URL.create(

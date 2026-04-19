@@ -1,6 +1,12 @@
-from httpx import AsyncClient
+from datetime import UTC, datetime, timedelta
 
-from tests.conftest import TEST_ADMIN_TELEGRAM_ID
+from httpx import AsyncClient
+from sqlalchemy import select
+
+from api.core.config import api_config
+from api.services.auth import jwt_service
+from shared.database.models import RefreshToken, User
+from tests.conftest import TEST_ADMIN_TELEGRAM_ID, TestSessionLocal
 
 
 class TestAdminStats:
@@ -49,6 +55,45 @@ class TestAdminBanUser:
         )
         assert resp.status_code == 404
         assert resp.json()["error"] == "user_not_found"
+
+
+class TestBanRevokesRefreshTokens:
+    async def test_ban_revokes_all_refresh_tokens_for_target_user(
+        self, admin_client: AsyncClient
+    ):
+        async with TestSessionLocal() as session:
+            target = User(telegram_id=555444333, language="en", is_blocked=False)
+            session.add(target)
+            await session.commit()
+
+            raw_a = jwt_service.generate_refresh_token()
+            raw_b = jwt_service.generate_refresh_token()
+            for raw in (raw_a, raw_b):
+                session.add(
+                    RefreshToken(
+                        user_id=target.id,
+                        token_hash=jwt_service.hash_refresh(raw),
+                        expires_at=datetime.now(UTC)
+                        + timedelta(seconds=api_config.jwt_refresh_ttl),
+                    )
+                )
+            await session.commit()
+            target_id = target.id
+
+        resp = await admin_client.post(
+            "/api/admin/ban",
+            json={"telegram_id": 555444333},
+        )
+        assert resp.status_code == 200
+
+        async with TestSessionLocal() as session:
+            rows = (
+                await session.execute(
+                    select(RefreshToken).where(RefreshToken.user_id == target_id)
+                )
+            ).scalars().all()
+            assert len(rows) == 2
+            assert all(r.revoked_at is not None for r in rows)
 
 
 class TestAdminUnbanUser:

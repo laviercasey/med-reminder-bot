@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.config import api_config
 from api.core.exceptions import ForbiddenError, UnauthorizedError
-from api.core.security import TelegramAuthService
+from api.services.auth import jwt_service
 from shared.database import db as _db
 from shared.database.models import User
 
@@ -19,8 +19,6 @@ if TYPE_CHECKING:
     from api.services.pubsub.publisher import RedisPublisher
     from api.services.settings.service import SettingsService
     from api.services.user.service import UserService
-
-_auth_service = TelegramAuthService(api_config.bot_token)
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
@@ -37,19 +35,35 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def get_current_user(
     session: AsyncSession = Depends(get_session),
-    authorization: str = Header(...),
+    authorization: str | None = Header(default=None),
 ) -> User:
-    init_data = authorization
-    if init_data.startswith("tma "):
-        init_data = init_data[4:]
-    tg_data = _auth_service.validate(init_data, max_age=api_config.max_auth_age)
-    telegram_id = tg_data.get("id")
+    if authorization is None or not authorization.strip():
+        raise UnauthorizedError("missing_authorization")
 
-    if telegram_id is None:
-        raise UnauthorizedError("invalid_telegram_id")
+    parts = authorization.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer" or not parts[1].strip():
+        raise UnauthorizedError("invalid_token_scheme")
 
-    query = select(User).where(User.telegram_id == telegram_id)
-    user = (await session.execute(query)).scalar_one_or_none()
+    token = parts[1].strip()
+
+    try:
+        claims = jwt_service.decode_access(token)
+    except jwt_service.TokenExpiredError:
+        raise UnauthorizedError("token_expired")
+    except jwt_service.WrongTokenTypeError:
+        raise UnauthorizedError("wrong_token_type")
+    except jwt_service.InvalidTokenError:
+        raise UnauthorizedError("invalid_token")
+
+    sub = claims.get("sub")
+    try:
+        telegram_id = int(sub)
+    except (TypeError, ValueError):
+        raise UnauthorizedError("invalid_token")
+
+    user = (
+        await session.execute(select(User).where(User.telegram_id == telegram_id))
+    ).scalar_one_or_none()
 
     if user is None:
         raise UnauthorizedError("user_not_found")
@@ -126,6 +140,8 @@ def get_admin_service(
 ) -> AdminService:
     from api.services.admin.repository import AdminRepository
     from api.services.admin.service import AdminService
+    from api.services.auth.repository import RefreshTokenRepository
 
     repository = AdminRepository(session)
-    return AdminService(repository, user)
+    refresh_repo = RefreshTokenRepository(session)
+    return AdminService(repository, user, refresh_repo=refresh_repo)

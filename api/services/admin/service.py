@@ -7,13 +7,20 @@ from api.services.admin.schemas import (
     AdminUserListResponse,
     AdminUserResponse,
 )
+from api.services.auth.repository import RefreshTokenRepository
 from shared.database.models import User
 
 
 class AdminService:
-    def __init__(self, repository: AdminRepository, user: User):
+    def __init__(
+        self,
+        repository: AdminRepository,
+        user: User,
+        refresh_repo: RefreshTokenRepository,
+    ):
         self._repository = repository
         self._user = user
+        self._refresh_repo = refresh_repo
 
     async def get_statistics(self) -> AdminStatsResponse:
         total_users = await self._repository.count_total_users()
@@ -67,6 +74,7 @@ class AdminService:
         if target is None:
             raise NotFoundError("user_not_found")
         await self._repository.set_user_blocked(target.id, True)
+        await self._refresh_repo.revoke_all_for_user(target.id)
         await self._repository.create_log(
             admin_id=self._user.telegram_id,
             action="ban_user",
