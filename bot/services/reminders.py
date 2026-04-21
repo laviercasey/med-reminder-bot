@@ -117,9 +117,11 @@ async def setup_medication_reminders(bot: Bot) -> None:
 
             expected_args = [bot, user.telegram_id, medication.id]
             existing = scheduler.get_job(job_id)
-            if existing is not None and _trigger_matches(
-                existing.trigger, hour, minute, tz
-            ) and list(existing.args) == expected_args:
+            if (
+                existing is not None
+                and _trigger_matches(existing.trigger, hour, minute, tz)
+                and list(existing.args) == expected_args
+            ):
                 continue
 
             scheduler.add_job(
