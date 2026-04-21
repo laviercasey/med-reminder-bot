@@ -215,3 +215,31 @@ async def test_catch_up_skips_blocked_user(bot, user_with_med, reminders_db):
     await catch_up_missed_reminders(bot)
 
     bot.send_message.assert_not_awaited()
+
+
+async def test_send_reminder_via_outbox_sync_fallback(
+    bot, user_with_med, reminders_db, monkeypatch
+):
+    from shared.config import settings as app_settings
+    monkeypatch.setattr(app_settings, "OUTBOX_ENABLED", True)
+    monkeypatch.setattr(app_settings, "OUTBOX_USE_CELERY", False)
+
+    from bot.services.reminders import send_medication_reminder
+    from shared.database.models import NotificationOutbox
+    from shared.notifications import OutboxStatus
+    from sqlalchemy import select as _select
+
+    await send_medication_reminder(
+        bot, user_with_med["telegram_id"], user_with_med["medication_id"]
+    )
+
+    bot.send_message.assert_awaited_once()
+    async with reminders_db() as session:
+        cl = await session.get(Checklist, user_with_med["checklist_id"])
+        assert cl.reminder_sent_at is not None
+        entries = (
+            await session.execute(_select(NotificationOutbox))
+        ).scalars().all()
+        assert len(entries) == 1
+        assert entries[0].status == str(OutboxStatus.SENT)
+        assert entries[0].kind == "reminder"

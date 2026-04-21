@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy import BigInteger as BigInt
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Column,
     Date,
     DateTime,
@@ -103,6 +104,45 @@ class RefreshToken(Base):
     user_agent = Column(String(255), nullable=True)
 
     user = relationship("User", backref="refresh_tokens")
+
+
+class NotificationOutbox(Base):
+    __tablename__ = "notifications_outbox"
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('reminder', 'followup')",
+            name="ck_notifications_outbox_kind",
+        ),
+        CheckConstraint(
+            "status IN ('pending', 'sent', 'failed', 'dead')",
+            name="ck_notifications_outbox_status",
+        ),
+    )
+
+    id = Column(
+        BigInt().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    medication_id = Column(
+        Integer, ForeignKey("medications.id", ondelete="CASCADE"), nullable=False
+    )
+    checklist_id = Column(Integer, ForeignKey("checklist.id", ondelete="CASCADE"), nullable=False)
+    kind = Column(String(16), nullable=False)
+    due_at = Column(DateTime(timezone=True), nullable=False)
+    status = Column(String(16), nullable=False, default="pending")
+    attempts = Column(Integer, nullable=False, default=0)
+    last_error = Column(Text, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class UserSettings(Base):

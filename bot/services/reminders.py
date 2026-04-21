@@ -12,7 +12,8 @@ from bot.keyboards import get_reminder_action_keyboard
 from bot.localization import get_text
 from shared.config import settings
 from shared.database.db import get_session
-from shared.database.models import Checklist, Medication, User, UserSettings
+from shared.database.models import Checklist, Medication, NotificationOutbox, User, UserSettings
+from shared.notifications import OutboxKind, OutboxRepository, process_outbox_entry
 
 DEFAULT_TZ = ZoneInfo("Europe/Moscow")
 scheduler = AsyncIOScheduler()
@@ -56,6 +57,89 @@ async def _delete_previous_reminder(bot: Bot, telegram_id: int, medication_id: i
         await bot.delete_message(chat_id=telegram_id, message_id=prev_msg_id)
     except Exception:
         pass
+
+
+async def _send_outbox_entry(bot: Bot, entry: NotificationOutbox, session) -> None:
+    from sqlalchemy import select as _select
+
+    user = (
+        await session.execute(_select(User).where(User.id == entry.user_id))
+    ).scalar_one_or_none()
+    medication = (
+        await session.execute(_select(Medication).where(Medication.id == entry.medication_id))
+    ).scalar_one_or_none()
+    if user is None or medication is None:
+        raise RuntimeError(f"outbox entry {entry.id} references missing user/medication")
+
+    text_key = "reminder" if entry.kind == str(OutboxKind.REMINDER) else "reminder_repeat"
+    text = get_text(text_key, user.language, name=medication.name)
+
+    await _delete_previous_reminder(bot, user.telegram_id, medication.id)
+
+    sent = await bot.send_message(
+        chat_id=user.telegram_id,
+        text=text,
+        reply_markup=get_reminder_action_keyboard(entry.checklist_id, user.language),
+    )
+    _save_reminder_message(user.telegram_id, medication.id, sent.message_id)
+
+
+async def _dispatch_notification(
+    bot: Bot,
+    session,
+    *,
+    user_id: int,
+    medication_id: int,
+    checklist_id: int,
+    kind: OutboxKind,
+) -> None:
+    now = datetime.now(UTC)
+
+    if not settings.OUTBOX_ENABLED:
+        telegram_id, language, name = await _load_send_context(session, user_id, medication_id)
+        text_key = "reminder" if kind == OutboxKind.REMINDER else "reminder_repeat"
+        text = get_text(text_key, language, name=name)
+        await _delete_previous_reminder(bot, telegram_id, medication_id)
+        sent = await bot.send_message(
+            chat_id=telegram_id,
+            text=text,
+            reply_markup=get_reminder_action_keyboard(checklist_id, language),
+        )
+        _save_reminder_message(telegram_id, medication_id, sent.message_id)
+        return
+
+    repo = OutboxRepository(session)
+    entry = await repo.create(
+        user_id=user_id,
+        medication_id=medication_id,
+        checklist_id=checklist_id,
+        kind=kind,
+        due_at=now,
+    )
+    await session.commit()
+
+    if settings.OUTBOX_USE_CELERY:
+        from shared.worker.tasks import dispatch_outbox_entry
+
+        dispatch_outbox_entry.delay(entry.id)
+        return
+
+    await process_outbox_entry(session, bot, entry, _send_outbox_entry)
+    await session.commit()
+
+
+async def _load_send_context(session, user_id: int, medication_id: int) -> tuple[int, str, str]:
+    from sqlalchemy import select as _select
+
+    user = (
+        await session.execute(_select(User).where(User.id == user_id))
+    ).scalar_one_or_none()
+    medication = (
+        await session.execute(_select(Medication).where(Medication.id == medication_id))
+    ).scalar_one_or_none()
+    if user is None or medication is None:
+        raise RuntimeError("user or medication missing for dispatch")
+    return user.telegram_id, user.language, medication.name
 
 
 def _today(tz: ZoneInfo | None = None) -> datetime.date:
@@ -232,18 +316,17 @@ async def send_medication_reminder(bot: Bot, telegram_id: int, medication_id: in
                 session.add(checklist)
                 await session.flush()
 
-            reminder_text = get_text("reminder", user.language, name=medication.name)
-
-            await _delete_previous_reminder(bot, telegram_id, medication_id)
-
-            sent = await bot.send_message(
-                chat_id=telegram_id,
-                text=reminder_text,
-                reply_markup=get_reminder_action_keyboard(checklist.id, user.language),
-            )
-            _save_reminder_message(telegram_id, medication_id, sent.message_id)
             checklist.reminder_sent_at = datetime.now(UTC)
             await session.commit()
+
+            await _dispatch_notification(
+                bot,
+                session,
+                user_id=user.id,
+                medication_id=medication_id,
+                checklist_id=checklist.id,
+                kind=OutboxKind.REMINDER,
+            )
 
             repeat_minutes = settings.REMINDER_RETRY_MINUTES
             if user_settings:
@@ -345,16 +428,14 @@ async def send_followup_reminder(bot: Bot, telegram_id: int, medication_id: int)
                 )
                 return
 
-            reminder_text = get_text("reminder_repeat", user.language, name=medication.name)
-
-            await _delete_previous_reminder(bot, telegram_id, medication_id)
-
-            sent = await bot.send_message(
-                chat_id=telegram_id,
-                text=reminder_text,
-                reply_markup=get_reminder_action_keyboard(checklist.id, user.language),
+            await _dispatch_notification(
+                bot,
+                session,
+                user_id=user.id,
+                medication_id=medication_id,
+                checklist_id=checklist.id,
+                kind=OutboxKind.FOLLOWUP,
             )
-            _save_reminder_message(telegram_id, medication_id, sent.message_id)
 
             repeat_minutes = settings.REMINDER_RETRY_MINUTES
             if user_settings:

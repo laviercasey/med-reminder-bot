@@ -30,6 +30,9 @@ class Settings(BaseSettings):
 
     REMINDER_RETRY_MINUTES: int = 30
 
+    OUTBOX_ENABLED: bool = False
+    OUTBOX_USE_CELERY: bool = False
+
     API_PORT: int = 8000
     ENVIRONMENT: str = "production"
 
