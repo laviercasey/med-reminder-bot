@@ -70,7 +70,7 @@ class RedisPubSubListener:
 
     async def _handle_medication_event(self, data: dict) -> None:
         event = data.get("event", "")
-        if event in ("medication_created", "medication_deleted"):
+        if event in ("medication_created", "medication_updated", "medication_deleted"):
             logger.info("Medication changed, refreshing scheduler")
             from bot.services.reminders import setup_medication_reminders
 

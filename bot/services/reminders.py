@@ -28,6 +28,18 @@ def _get_user_tz(user_settings: UserSettings | None) -> ZoneInfo:
     return DEFAULT_TZ
 
 
+def _trigger_matches(trigger: CronTrigger, hour: int, minute: int, tz: ZoneInfo) -> bool:
+    try:
+        fields = {f.name: str(f) for f in trigger.fields}
+        return (
+            fields.get("hour") == str(hour)
+            and fields.get("minute") == str(minute)
+            and str(trigger.timezone) == str(tz)
+        )
+    except AttributeError:
+        return False
+
+
 _last_reminder_messages: dict[tuple[int, int], int] = {}
 
 
@@ -103,10 +115,17 @@ async def setup_medication_reminders(bot: Bot) -> None:
             job_id = f"reminder_{medication.id}"
             current_reminder_ids.add(job_id)
 
+            expected_args = [bot, user.telegram_id, medication.id]
+            existing = scheduler.get_job(job_id)
+            if existing is not None and _trigger_matches(
+                existing.trigger, hour, minute, tz
+            ) and list(existing.args) == expected_args:
+                continue
+
             scheduler.add_job(
                 send_medication_reminder,
                 CronTrigger(hour=hour, minute=minute, timezone=tz),
-                args=[bot, user.telegram_id, medication.id],
+                args=expected_args,
                 id=job_id,
                 replace_existing=True,
                 coalesce=True,
