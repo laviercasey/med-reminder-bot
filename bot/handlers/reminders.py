@@ -84,7 +84,7 @@ async def process_snooze(callback: types.CallbackQuery) -> None:
 
             from apscheduler.triggers.date import DateTrigger
 
-            from bot.services.reminders import _get_user_tz, scheduler, send_medication_reminder
+            from bot.services.reminders import _get_user_tz, scheduler, send_followup_reminder
 
             settings_query = select(UserSettings).where(UserSettings.user_id == user.id)
             user_settings = (await session.execute(settings_query)).scalar_one_or_none()
@@ -94,7 +94,7 @@ async def process_snooze(callback: types.CallbackQuery) -> None:
             job_id = f"snooze_{checklist.id}_{int(snooze_time.timestamp())}"
 
             scheduler.add_job(
-                send_medication_reminder,
+                send_followup_reminder,
                 DateTrigger(run_date=snooze_time),
                 args=[callback.bot, user_id, medication.id],
                 id=job_id,
