@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
 from unittest.mock import AsyncMock, MagicMock
 from zoneinfo import ZoneInfo
 
@@ -153,28 +153,39 @@ async def test_catch_up_skips_already_taken(bot, user_with_med, reminders_db):
     bot.send_message.assert_not_awaited()
 
 
-async def test_catch_up_skips_future_due(bot, reminders_db):
+async def test_catch_up_skips_future_due(bot, reminders_db, monkeypatch):
+    from bot.services import reminders as reminders_module
     from bot.services.reminders import catch_up_missed_reminders
 
     tz = ZoneInfo("Europe/Moscow")
-    now = datetime.now(tz)
-    future_time = (now + timedelta(hours=2)).time().replace(microsecond=0)
+    fixed_now = datetime(2026, 1, 15, 10, 0, 0, tzinfo=tz)
+
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            if tz is None:
+                return fixed_now.replace(tzinfo=None)
+            return fixed_now.astimezone(tz)
+
+    monkeypatch.setattr(reminders_module, "datetime", FrozenDateTime)
+
+    future_time = time(12, 0, 0)
 
     async with reminders_db() as session:
         user = User(telegram_id=222333444, language="ru", is_blocked=False)
         session.add(user)
         await session.flush()
-        settings = UserSettings(
+        user_settings = UserSettings(
             user_id=user.id, reminders_enabled=True, reminder_repeat_minutes=30
         )
-        session.add(settings)
+        session.add(user_settings)
         med = Medication(user_id=user.id, name="Future", schedule="custom", time=future_time)
         session.add(med)
         await session.flush()
         checklist = Checklist(
             user_id=user.id,
             medication_id=med.id,
-            date=now.date(),
+            date=fixed_now.date(),
             status=False,
         )
         session.add(checklist)
